@@ -27,9 +27,10 @@ class Settings(BaseSettings):
         ),
     )
     openai_base_url: str = Field(
-        default="https://models.inference.ai.azure.com",
+        default="https://api.openai.com/v1",
         description="Base URL for the OpenAI-compatible provider.",
     )
+
     openai_model: str = Field(
         default="gpt-4o-mini",
         description="Model name passed to chat.completions.create().",

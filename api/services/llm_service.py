@@ -12,6 +12,8 @@ Set OPENAI_API_KEY, and optionally OPENAI_BASE_URL and OPENAI_MODEL
 in your .env file. Settings are loaded by ``api.config.Settings``.
 """
 
+import json
+
 from openai import AsyncOpenAI
 
 from api.config import get_settings
@@ -62,6 +64,35 @@ async def analyze_journal_entry(
       4. Parse the assistant's JSON response with ``json.loads()``.
       5. Return a dict with ``entry_id``, ``sentiment``, ``summary``, ``topics``.
     """
+
+    if client is None:
+        client = _default_client()
+
+    settings = get_settings()
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an analyst that given a text, you reply with a json containing sentiment(positive, negative or neutral), summary and topics(2-4 topics).",
+            },
+            {"role": "user", "content": entry_text},
+        ],
+        response_format={"type": "json_object"},
+    )
+    raw_content = response.choices[0].message.content
+
+    if raw_content is None:
+        raise ValueError("The LLM returned an empty response.")
+    data = json.loads(raw_content)
+
+    return {
+        "entry_id": entry_id,
+        "sentiment": data["sentiment"],
+        "summary": data["summary"],
+        "topics": data["topics"],
+    }
+
     raise NotImplementedError(
         "Task 4: implement analyze_journal_entry using the openai SDK. "
         "See tests/test_llm_service.py for the test contract."
